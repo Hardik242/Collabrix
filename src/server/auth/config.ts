@@ -5,7 +5,7 @@ import { signInSchema } from "@/schemas";
 import { db } from "@/server/db";
 import Credentials from "next-auth/providers/credentials";
 
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -50,6 +50,10 @@ export const authConfig = {
               email,
             },
           });
+
+          if (!user) {
+            return null;
+          }
 
           const passwordMatched = await bcrypt.compare(
             password,

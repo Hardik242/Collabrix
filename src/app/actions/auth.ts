@@ -1,9 +1,11 @@
 "use server";
 
-import { signUpSchema } from "@/schemas";
-import { redirect } from "next/navigation";
+import { signInSchema, signUpSchema } from "@/schemas";
+import { signIn } from "@/server/auth";
 import { db } from "@/server/db";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
+import { AuthError } from "next-auth";
+import { redirect, RedirectType } from "next/navigation";
 
 export async function register(
   prevState:
@@ -24,14 +26,18 @@ export async function register(
   if (!result.success) {
     return {
       success: false,
-      emailMessage: result.error.issues
-        .filter((issue) => issue.path[0] === "email")
-        ?.map((issue) => issue.message)
-        .join("\n"),
-      passwordMessage: result.error.issues
-        .filter((issue) => issue.path[0] === "password")
-        ?.map((issue) => issue.message)
-        .join("\n"),
+      emailMessage:
+        result.error.issues
+          .map((issue) => {
+            if (issue.path[0] === "email") return issue.message;
+          })
+          ?.join("\n") ?? null,
+      passwordMessage:
+        result.error.issues
+          .map((issue) => {
+            if (issue.path[0] === "password") return issue.message;
+          })
+          ?.join("\n") ?? null,
     };
   } else {
     try {
@@ -74,6 +80,51 @@ export async function register(
   }
 }
 
+export async function authenticate(
+  prevState:
+    | {
+        success: boolean;
+        emailMessage?: string | null;
+        passwordMessage?: string | null;
+        message?: string;
+      }
+    | undefined,
+  formData: FormData,
+) {
+  try {
+    await signIn("credentials", {
+      ...Object.fromEntries(formData), // Pass form fields as an object
+      redirect: false,
+    });
+
+    return {
+      success: true,
+      message: "Logged In Successfully",
+    };
+  } catch (error) {
+    console.log("IN auth: ", error);
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case "CredentialsSignin":
+          return {
+            success: false,
+            message: "Invalid Credentials",
+          };
+
+        default:
+          return {
+            success: false,
+            message: "Something went wrong",
+          };
+      }
+    }
+    return {
+      success: false,
+      message: "Something went wrong",
+    };
+  }
+}
+
 export async function redirectServer(path: string) {
-  redirect(path);
+  redirect(path, RedirectType.replace);
 }

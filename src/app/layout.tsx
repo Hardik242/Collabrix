@@ -2,7 +2,8 @@ import "@/styles/globals.css";
 
 import { type Metadata } from "next";
 import { Inter } from "next/font/google";
-import { Toaster } from "sonner";
+import "react-toastify/ReactToastify.css";
+import { Slide, ToastContainer } from "react-toastify/unstyled";
 
 export const metadata: Metadata = {
   title: "Collabrix",
@@ -23,7 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable}`}>
       <body>
-        <Toaster position="top-right" />
+        <ToastContainer transition={Slide} />
         {children}
       </body>
     </html>
